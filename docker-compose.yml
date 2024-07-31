@@ -1,0 +1,15 @@
+version: '2'
+services:
+  point_segmentation:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: point_segmentation:latest
+    volumes:
+      - ../point_segmentation_models:/point_segmentation_models
+    tty: true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
