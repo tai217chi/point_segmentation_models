@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import numpy as np 
+import numpy as np
 
-import torch 
-import torch.nn as nn 
+import torch
+import torch.nn as nn
 import torch.utils.data
 import torch.nn.functional as F
 from torch.autograd import Variable
@@ -105,3 +105,36 @@ class TNetkd(nn.Module):
         x = x.view(-1, self.k, self.k)
 
         return x
+
+class PointNetEncoder(nn.Module):
+
+    def __init__(
+            self, 
+            global_feat: bool=True, 
+            feature_transform: bool=False, 
+            input_channel=3
+    )-> None:
+        
+        super(PointNetEncoder, self).__init__()
+
+        self.tnet = TNet3d(input_channel)
+        self.conv1 = nn.Conv1d(input_channel, 64, 1)
+        self.conv2 = nn.Conv1d(64, 128, 1)
+        self.conv3 = nn.Conv1d(128, 1024, 1)
+
+        self.bn1 = nn.BatchNorm1d(64)
+        self.bn2 = nn.BatchNorm1d(128)
+        self.bn3 = nn.BatchNorm1d(1024)
+
+        self._global_feat = global_feat
+        self._feature_transform = feature_transform
+
+        if self._feature_transform:
+            self._feature_tnet = TNetkd(k=64)
+
+    def forward(self, x:FloatTensor):
+        
+        B, D, N = x.size() # B: batch size, D: 点群の次元数, N: 点群数
+        transform_mat = self.tnet(x)
+        x = x.transpose(2, 1)
+        
